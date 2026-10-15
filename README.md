@@ -110,9 +110,11 @@ scp -r public deploy/deploy.sh server:/home/hilgard/deploy-psani/
 ssh root@server 'bash /home/hilgard/deploy-psani/deploy.sh'
 ```
 
-## 🙏 Poděkování
+## 📄 Licence
 
-- Písma [Inter](https://rsms.me/inter/) a [JetBrains Mono](https://www.jetbrains.com/lp/mono/) pod licencí SIL Open Font License.
+Kód je k dispozici pod licencí [MIT](LICENSE) — můžete ho volně používat, upravovat i šířit.
+
+Písma [Inter](https://rsms.me/inter/) a [JetBrains Mono](https://www.jetbrains.com/lp/mono/) mají vlastní licenci SIL Open Font License (viz `public/fonts/OFL-*.txt`).
 
 ---
 

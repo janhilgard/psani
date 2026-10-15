@@ -2,6 +2,7 @@
   "name": "psani-vsemi-deseti",
   "version": "2.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Kurz psaní všemi deseti na české klávesnici (statický web, bez závislostí)",
   "scripts": {
