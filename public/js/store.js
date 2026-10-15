@@ -43,9 +43,14 @@ export function sanitize(raw, { lessonIds, chars }) {
   if (isObj(raw.lessons)) {
     for (const id of lessonIds) {
       const l = own(raw.lessons, id) ? raw.lessons[id] : null;
-      if (!isObj(l) || !isObj(l.best)) continue;
+      if (!isObj(l)) continue;
+      const tasks = Array.isArray(l.tasks) ? l.tasks.slice(0, 12).map(t => isObj(t) ? {
+        cpm: num(t.cpm, 0, 2000), acc: num(t.acc, 0, 100), stars: Math.round(num(t.stars, 0, 3)),
+      } : null) : [];
+      if (!isObj(l.best) && !tasks.some(Boolean)) continue;
       s.lessons[id] = {
-        best: {
+        tasks,
+        best: !isObj(l.best) ? null : {
           cpm: num(l.best.cpm, 0, 2000), acc: num(l.best.acc, 0, 100),
           stars: Math.round(num(l.best.stars, 0, 3)), ts: num(l.best.ts, 0, 1e14),
         },

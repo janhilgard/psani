@@ -2,7 +2,7 @@
    PSANÍ VŠEMI DESETI — aplikace
 ================================================================ */
 import { buildLayout, FINGERS, FINGER_ORDER } from "./layout.js";
-import { LESSONS, SECTIONS, buildText, lessonText, testText, starsFor } from "./curriculum.js";
+import { LESSONS, SECTIONS, buildText, taskText, testText, starsFor } from "./curriculum.js";
 import * as store from "./store.js";
 import { renderKeyboard, highlightNext, flashKey, renderHands, highlightFingers, lineChart, fingerColor } from "./keyboard.js";
 
@@ -33,6 +33,15 @@ const passed = id => starsOf(id) >= 1;
 const unlocked = idx => S.settings.freeChoice || idx === 0 || passed(LESSONS[idx - 1].id);
 const nextLesson = () => LESSONS.find((l, i) => unlocked(i) && !passed(l.id)) ?? LESSONS[LESSONS.length - 1];
 const passedCount = () => LESSONS.filter(l => passed(l.id)).length;
+/* Úlohy: lekce je splněná, až když jsou splněné všechny její úlohy. */
+const taskStars = (id, ti) => S.lessons[id]?.tasks?.[ti]?.stars ?? 0;
+const taskPassed = (l, ti) => passed(l.id) || taskStars(l.id, ti) >= 1;
+const tasksDone = l => l.tasks.filter((_, i) => taskPassed(l, i)).length;
+const taskUnlocked = (l, ti) => S.settings.freeChoice || ti === 0 || taskPassed(l, ti - 1);
+function firstOpenTask(l) {
+  const i = l.tasks.findIndex((_, ti) => !taskPassed(l, ti));
+  return i < 0 ? 0 : i;
+}
 /* Základ pro trénink: poslední splněná lekce (znaky, které žák opravdu umí). */
 function trainingBase() {
   const done = LESSONS.filter(l => passed(l.id));
@@ -135,7 +144,10 @@ function renderNav() {
       if (view === "practice" && run?.mode === "lesson" && run.lesson.id === l.id) b.classList.add("active");
       b.title = l.title;
       b.append(el("span", "no", st ? "✓" : String(l.id)), el("span", "tt", l.title));
-      b.append(open ? starsEl(st, "stars mini") : el("span", "lock", "🔒"));
+      const part = tasksDone(l);
+      if (!open) b.append(el("span", "lock", "🔒"));
+      else if (!st && part) b.append(el("span", "part", `${part}/${l.tasks.length}`));
+      else b.append(starsEl(st, "stars mini"));
       b.addEventListener("click", () => {
         if (open) startLesson(l);
         else toast(`Nejdřív splňte lekci ${idx}. Volný výběr lekcí zapnete v Nastavení.`);
@@ -214,13 +226,36 @@ $("btn-adaptive-home").addEventListener("click", startAdaptive);
 /* ================================================================
    CVIČENÍ — start
 ================================================================ */
-function startLesson(l) {
+function startLesson(l, ti = firstOpenTask(l)) {
+  const task = l.tasks[ti];
   begin({
-    mode: "lesson", lesson: l, text: lessonText(l),
+    mode: "lesson", lesson: l, taskIdx: ti, task, text: taskText(task),
     title: `${l.id}. ${l.title}`, sub: l.desc,
     chip: l.adds.length ? "Nové: " + chipText(l.adds) : "Opakování",
   });
   if (l.id === 1 && !S.introSeen) openModal("intro");
+}
+
+/* Krokovník úloh nad textem. */
+function renderSteps() {
+  const box = $("task-steps");
+  box.replaceChildren();
+  if (run.mode !== "lesson") return;
+  const l = run.lesson;
+  l.tasks.forEach((t, i) => {
+    const b = el("button", "step");
+    if (taskPassed(l, i)) b.classList.add("done");
+    if (i === run.taskIdx) { b.classList.add("current"); b.setAttribute("aria-current", "step"); }
+    const open = taskUnlocked(l, i);
+    if (!open) b.classList.add("locked");
+    b.append(el("span", "n", taskPassed(l, i) ? "✓" : String(i + 1)), el("span", "t", t.title));
+    b.title = open ? `Úloha ${i + 1}: ${t.title}` : "Nejdřív splňte předchozí úlohu.";
+    b.addEventListener("click", () => {
+      if (open) startLesson(l, i);
+      else toast("Nejdřív splňte předchozí úlohu.");
+    });
+    box.append(b);
+  });
 }
 function chipText(adds) {
   if (adds.join("") === "ABCDEFGHIJKLMNOPQRSTUVWXYZ") return "A–Z";
@@ -257,7 +292,7 @@ for (const b of document.querySelectorAll("[data-test]")) {
 
 function restart() {
   if (!run) return;
-  if (run.mode === "lesson") startLesson(run.lesson);
+  if (run.mode === "lesson") startLesson(run.lesson, run.taskIdx);
   else if (run.mode === "adaptive") startAdaptive();
   else startTest(run.limit);
 }
@@ -275,6 +310,7 @@ function begin(opts) {
   $("practice-chip").textContent = opts.chip;
   $("practice-sub").textContent = opts.sub;
   $("practice-target").replaceChildren(...targetNodes());
+  renderSteps();
   $("st-time-label").textContent = run.mode === "test" ? "Zbývá" : "Čas";
   $("warn").replaceChildren();
   renderText();
@@ -289,11 +325,12 @@ function targetNodes() {
   if (run.mode !== "lesson") return [el("span", null, run.mode === "test"
     ? "Výsledek se uloží do statistik. Chyby se neopravují — pište dál."
     : "Po dokončení se statistiky kláves aktualizují a příští trénink se přizpůsobí.")];
-  const l = run.lesson, b = best(l.id);
+  const t = run.task, b = S.lessons[run.lesson.id]?.tasks?.[run.taskIdx];
   const nodes = [
-    el("span", null, `Splnění: přesnost ≥ ${l.acc} %`),
-    el("span", null, `★★ od ${l.cpm} úhozů/min`),
-    el("span", null, `★★★ přesnost 98 % a ${Math.round(l.cpm * 1.25)} úhozů/min`),
+    el("span", "task-name", `Úloha ${run.taskIdx + 1}/${run.lesson.tasks.length}: ${t.title}`),
+    el("span", null, `Splnění: přesnost ≥ ${t.acc} %`),
+    el("span", null, `★★ od ${t.cpm} úhozů/min`),
+    el("span", null, `★★★ přesnost 98 % a ${Math.round(t.cpm * 1.25)} úhozů/min`),
   ];
   if (b) {
     const s = el("span", "best");
@@ -568,17 +605,31 @@ function finish() {
   const r = { cpm, acc, sec, stars: null, wasPassed: false, record: false };
 
   if (run.mode === "lesson") {
-    const l = run.lesson;
+    const l = run.lesson, ti = run.taskIdx;
     r.wasPassed = passed(l.id);
-    r.stars = starsFor(l, cpm, acc);
-    const rec = S.lessons[l.id] ?? { best: null, tries: 0 };
+    r.stars = starsFor(run.task, cpm, acc);
+    const rec = S.lessons[l.id] ?? { best: null, tries: 0, tasks: [] };
+    rec.tasks ??= [];
     rec.tries++;
-    const b = rec.best;
-    if (!b || r.stars > b.stars || (r.stars === b.stars && cpm > b.cpm)) {
-      r.record = !!b;
-      rec.best = { cpm, acc, stars: r.stars, ts: Date.now() };
+    const tb = rec.tasks[ti];
+    if (!tb || r.stars > tb.stars || (r.stars === tb.stars && cpm > tb.cpm)) {
+      r.record = !!tb && r.stars >= 1 && cpm > tb.cpm;
+      rec.tasks[ti] = { cpm, acc, stars: r.stars };
+    }
+    for (let i = 0; i < l.tasks.length; i++) rec.tasks[i] ??= null;
+    // souhrn lekce, jakmile jsou splněné všechny úlohy
+    const ts = rec.tasks.slice(0, l.tasks.length);
+    if (ts.every(t => t && t.stars >= 1)) {
+      const sum = {
+        stars: Math.min(...ts.map(t => t.stars)),
+        cpm: Math.round(ts.reduce((a, t) => a + t.cpm, 0) / ts.length),
+        acc: Math.round(10 * ts.reduce((a, t) => a + t.acc, 0) / ts.length) / 10,
+        ts: Date.now(),
+      };
+      if (!rec.best || sum.stars > rec.best.stars || (sum.stars === rec.best.stars && sum.cpm > rec.best.cpm)) rec.best = sum;
     }
     S.lessons[l.id] = rec;
+    r.lessonDone = !r.wasPassed && passed(l.id);
   } else if (run.mode === "test") {
     const prev = S.history.filter(h => h.kind === "test" && h.id === run.limit);
     r.record = prev.length > 0 && cpm > Math.max(...prev.map(h => h.cpm));
@@ -595,8 +646,8 @@ function finish() {
 }
 
 function showResults(r) {
-  const l = run.lesson;
-  $("res-title").textContent = run.mode === "lesson" ? `Lekce ${l.id}: ${l.title}`
+  const l = run.lesson, ti = run.taskIdx;
+  $("res-title").textContent = run.mode === "lesson" ? `Lekce ${l.id} · úloha ${ti + 1}/${l.tasks.length}: ${run.task.title}`
     : run.mode === "test" ? `Test rychlosti — ${run.limit / 60} min` : "Trénink slabých kláves";
   $("res-stars").replaceChildren();
   if (r.stars !== null) $("res-stars").append(starsEl(r.stars, "stars big"));
@@ -608,15 +659,24 @@ function showResults(r) {
 
   let verdict, cls = "ok";
   const next = l && LESSONS.find(x => x.id === l.id + 1);
+  const nextTask = l && l.tasks[ti + 1];
+  nextAction = null;
   if (run.mode === "lesson") {
+    const t = run.task;
     if (r.stars === 0) {
       cls = "fail";
-      verdict = `Pro splnění potřebujete přesnost alespoň ${l.acc} % (máte ${fmt(r.acc)} %). Zpomalte — přesnost je teď důležitější než rychlost.`;
-    } else if (r.stars === 1) {
-      verdict = `Lekce splněna${!r.wasPassed && next ? " a další je odemčená" : ""}! Druhou hvězdu získáte při ${l.cpm} úhozech za minutu.`;
-    } else if (r.stars === 2) {
-      verdict = `Výborně! Třetí hvězda: přesnost 98 % a ${Math.round(l.cpm * 1.25)} úhozů za minutu.`;
-    } else verdict = "Perfektní výkon — tři hvězdy!";
+      verdict = `Pro splnění potřebujete přesnost alespoň ${t.acc} % (máte ${fmt(r.acc)} %). Zpomalte — přesnost je teď důležitější než rychlost.`;
+    } else {
+      const done = nextTask ? `Úloha splněna! Další: ${nextTask.title}.`
+        : r.lessonDone ? `Celá lekce splněna${next ? " a další lekce je odemčená" : ""}!`
+        : "Úloha splněna!";
+      const more = r.stars === 1 ? ` Druhou hvězdu získáte při ${t.cpm} úhozech za minutu.`
+        : r.stars === 2 ? ` Třetí hvězda: přesnost 98 % a ${Math.round(t.cpm * 1.25)} úhozů za minutu.`
+        : " Perfektní výkon — tři hvězdy!";
+      verdict = done + more;
+      if (nextTask) nextAction = { label: "Další úloha →", run: () => startLesson(l, ti + 1) };
+      else if (next && passed(l.id)) nextAction = { label: "Další lekce →", run: () => startLesson(next) };
+    }
   } else if (run.mode === "test") {
     verdict = r.cpm >= 200 ? "Skvělé tempo, to už je rychlost zkušeného písaře."
       : r.cpm >= 120 ? "Dobré tempo. Pravidelným tréninkem se dostanete přes 200 úhozů za minutu."
@@ -654,7 +714,8 @@ function showResults(r) {
     }
   }
 
-  const canNext = run.mode === "lesson" && r.stars >= 1 && next;
+  const canNext = !!nextAction;
+  if (canNext) $("btn-next").textContent = nextAction.label;
   $("btn-next").classList.toggle("hidden", !canNext);
   $("btn-again").classList.toggle("primary", !canNext);
   openModal("overlay", canNext ? "btn-next" : "btn-again");
@@ -662,10 +723,8 @@ function showResults(r) {
 }
 
 $("btn-again").addEventListener("click", restart);
-$("btn-next").addEventListener("click", () => {
-  const next = LESSONS.find(x => x.id === run.lesson.id + 1);
-  if (next) startLesson(next);
-});
+let nextAction = null;
+$("btn-next").addEventListener("click", () => nextAction?.run());
 $("btn-menu").addEventListener("click", () => { closeModal(); show("home"); });
 $("btn-back").addEventListener("click", () => show("home"));
 $("btn-restart").addEventListener("click", restart);

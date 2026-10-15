@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { buildLayout } from "../public/js/layout.js";
-import { LESSONS, buildText, lessonText, testText, makeRng, starsFor } from "../public/js/curriculum.js";
+import { LESSONS, PASS_ACC, buildText, lessonText, taskText, testText, makeRng, starsFor } from "../public/js/curriculum.js";
 import { WORDS, NAMES, TEXTS } from "../public/js/words.js";
 import { sanitize, fresh, weakChars } from "../public/js/store.js";
 
@@ -93,6 +93,40 @@ test("generované texty obsahují jen naučené znaky a procvičují nové", () 
   }
 });
 
+test("úlohy: nácvik každého nového znaku, slova a procvičení", () => {
+  let total = 0;
+  for (const l of LESSONS) {
+    total += l.tasks.length;
+    assert.ok(l.tasks.length >= 1, `lekce ${l.id} nemá úlohy`);
+    // každý nový znak má svou úlohu
+    // úlohy na jednotlivé znaky jsou všechny kromě posledních dvou (slova a procvičení)
+    const drilled = new Set(l.tasks.slice(0, -2).flatMap(t => [...t.focus]));
+    if (l.adds.length) for (const ch of l.adds) assert.ok(drilled.has(ch), `lekce ${l.id}: znak ${ch} nemá vlastní úlohu`);
+    for (const [ti, t] of l.tasks.entries()) {
+      for (const ch of t.known) assert.ok(l.known.has(ch), `lekce ${l.id}/${ti}: úloha zná víc než lekce`);
+      for (let seed = 1; seed <= 25; seed++) {
+        const txt = taskText(t, makeRng(seed * 31 + l.id * 7 + ti));
+        for (const ch of txt) assert.ok(t.known.has(ch), `lekce ${l.id}, úloha „${t.title}“: neznámý znak „${ch}“ v „${txt.slice(0, 80)}“`);
+        assert.ok(txt === txt.trim() && !/ {2}/.test(txt), `lekce ${l.id}/${ti}: mezery`);
+      }
+      const joined = Array.from({ length: 8 }, (_, i) => taskText(t, makeRng(i + 1))).join("");
+      for (const ch of t.focus) assert.ok(joined.includes(ch), `lekce ${l.id}, úloha „${t.title}“: znak ${ch} se neprocvičuje`);
+    }
+  }
+  assert.ok(total >= 100, `úloh je jen ${total}`);
+  // úlohy na jednotlivá písmena: E a I → samostatně E, samostatně I
+  const ei = LESSONS.find(l => l.title === "E a I");
+  assert.deepEqual(ei.tasks.slice(0, 2).map(t => [...t.focus]), [["e"], ["i"]]);
+  assert.ok(!ei.tasks[0].known.has("i"), "úloha na E nesmí používat I");
+});
+
+test("slovník je dost velký i pro rané lekce", () => {
+  assert.ok(WORDS.length >= 1500, `slov je jen ${WORDS.length}`);
+  const pool = l => WORDS.filter(w => [...w].every(c => l.known.has(c))).length;
+  assert.ok(pool(LESSONS[5]) >= 20, `domovská řada: jen ${pool(LESSONS[5])} slov`);
+  assert.ok(pool(LESSONS[8]) >= 80, `po lekci O: jen ${pool(LESSONS[8])} slov`);
+});
+
 test("adaptivní trénink a test rychlosti", () => {
   const l = LESSONS[12];
   const t = buildText({ known: l.known, focus: new Set(["n", "m"]), kind: "words", len: 220, rng: makeRng(5) });
@@ -103,8 +137,9 @@ test("adaptivní trénink a test rychlosti", () => {
 
 test("hvězdy", () => {
   const l = LESSONS[0];
-  assert.equal(starsFor(l, 999, 93.9), 0);
-  assert.equal(starsFor(l, l.cpm - 1, 94), 1);
+  assert.equal(PASS_ACC, 90);
+  assert.equal(starsFor(l, 999, 89.9), 0);
+  assert.equal(starsFor(l, l.cpm - 1, 90), 1);
   assert.equal(starsFor(l, l.cpm, 97), 2);
   assert.equal(starsFor(l, l.cpm * 1.25, 98), 3);
 });
@@ -122,6 +157,10 @@ test("sanitize: import zálohy přijme jen platná pole", () => {
   assert.equal(s.settings.goal, 10);
   assert.deepEqual(s.lessons[1].best, { cpm: 0, acc: 100, stars: 3, ts: 0 });
   assert.equal(s.lessons[1].tries, 0);
+  assert.deepEqual(s.lessons[1].tasks, []);
+  const withTasks = sanitize({ lessons: { 2: { tasks: [{ stars: 2, cpm: 80, acc: 95 }, "x", null], tries: 3 } } }, ctx);
+  assert.deepEqual(withTasks.lessons[2].tasks, [{ cpm: 80, acc: 95, stars: 2 }, null, null]);
+  assert.equal(withTasks.lessons[2].best, null);
   assert.equal(s.lessons[999], undefined);
   assert.equal(s.keys.a.err, 1e9);
   assert.equal(Object.hasOwn(s.keys, "constructor"), false);

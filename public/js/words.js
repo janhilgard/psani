@@ -88,7 +88,127 @@ nákup nebe obchod ovoce peníze pošta recept sešit stanice taška tempo
 tón úsměv vesnice výlet zelenina zmrzlina
 `;
 
-export const WORDS = [...new Set(RAW_WORDS.trim().split(/\s+/))];
+const RAW_WORDS_2 = `
+gala halda dlaha fajfka laskal laskala skal hala haly kafe jehla jehly hejkal
+lilek flek dekl kel sklidil sklidila hesla sedadla sedadlo kdesi jeli jela
+jeden jedna jedno jedni lesk lesku lekce dle sejde sejdu rajka krajka lusk
+lusky suk frak kufru druh druhu kruh kruhy hraje hrajeme hrají sraz srazu
+dar daru dala dali jedla sedla sedli hledal hledali hledala lekli fialka
+fialky jahoda jahody kladivo kladiva dlouho dole dolů sklo skla
+hrad hradu hradě hory hor horu hora kolo kola kolu holub holubi
+dub duby dubu ruka rukou ruce rukama noha nohou nohama hlava hlavy hlavou
+oko okem oči očima ucho uchem uši ušima nos nosu nosem ústa zub zuby zubů
+rok roku roky let léta den dne dni dny týden týdne týdny měsíc měsíce
+hodina hodiny hodinu hodin minuta minuty minut sekunda sekundy chvíle chvíli
+ráno ránu dopoledne poledne odpoledne večer večera noc noci půlnoc
+pondělí úterý středa čtvrtek pátek sobota neděle víkend víkendu svátek
+leden únor březen duben květen červen červenec srpen září říjen listopad prosinec
+jaro jara léto léta podzim podzimu zima zimy zimu počasí teplo zima vedro
+slunce sluncem měsíc hvězdy obloha mraky déšť deště sníh sněhu led ledu
+vítr větru bouřka blesk hrom duha mlha rosa kroupy mráz mrazu
+strom stromu stromy les lesa lesy lesem louka louky pole polí zahrada zahrady
+tráva trávu květ květy list listy větev větve kořen kořeny keř keře
+jablko jablka hruška hrušky švestka švestky třešeň višně malina maliny
+jahoda borůvka borůvky ořech ořechy houba houby kaštan kaštany žalud
+rajče rajčata okurka okurky mrkev cibule česnek brambory zelí salát
+paprika dýně hrách fazole kukuřice čočka rýže těstoviny knedlík knedlíky
+chléb chleba rohlík rohlíky houska housky koláč koláče buchta buchty
+máslo sýr sýry tvaroh jogurt mléko smetana vejce vajíčko šunka salám
+maso ryba ryby kuře polévka omáčka guláš řízek oběd obědy večeře snídaně
+káva kávu čaj čaje voda vody vodu džus limonáda pivo víno sirup med cukr
+sůl pepř mouka olej ocet hořčice kečup čokoláda bonbon bonbony zmrzlina
+dům domu domy domě byt bytu pokoj pokoje kuchyně ložnice koupelna chodba
+okno okna dveře zeď zdi strop podlaha schody střecha komín sklep půda
+stůl stolu stoly židle křeslo gauč postel skříň police lampa koberec
+hrnek hrnky talíř talíře miska lžíce lžička vidlička nůž hrnec pánev
+kniha knihy knihu sešit sešity tužka tužky pero pera pravítko guma papír
+taška batoh kufr peněženka klíč klíče brýle hodinky deštník šála čepice
+bunda kabát svetr tričko košile kalhoty sukně šaty boty ponožky rukavice
+auto auta autem vlak vlaky vlakem autobus tramvaj metro kolo loď letadlo
+silnice ulice cesta cesty most mosty náměstí park parky nádraží stanice
+město města městě vesnice vesnici obec kraj kraje země státu stát
+škola školy škole třída třídy učebna lavice tabule křída zvonek přestávka
+učitel učitelka žák žáci žákyně student studenti ředitel ředitelka
+úkol úkoly úkolů test testy písemka známka známky vysvědčení prázdniny
+práce práci prací firma firmy kancelář šéf kolega kolegyně porada plat
+lékař lékařka sestra nemocnice lékárna lék léky nemoc horečka kašel rýma
+pes psa psi psem kočka kočky kočku kůň koně kráva krávy prase prasata
+ovce koza kozy slepice kohout kachna husa králík myš myši potkan
+liška lišky vlk vlci medvěd jelen srna zajíc ježek veverka bobr vydra
+pták ptáci sova orel čáp vrána straka holub sýkorka vrabec kos labuť
+ryba kapr štika pstruh žába had ještěrka želva šnek motýl včela vosa
+čmelák moucha komár mravenec pavouk brouk beruška červ
+máma táta maminka tatínek rodiče babička dědeček děda bába vnuk vnučka
+bratr sestra syn dcera strýc teta bratranec sestřenice rodina rodiny
+kamarád kamarádka kamarádi přítel přítelkyně soused sousedka host hosté
+člověk lidé muž muži žena ženy dítě děti chlapec chlapci dívka dívky
+dobrý dobrá dobré dobří velký velká velké malý malá malé nový nová nové
+starý stará staré mladý mladá mladé hezký hezká hezké krásný krásná krásné
+rychlý rychlá rychlé pomalý pomalá pomalé dlouhý dlouhá dlouhé krátký krátká
+vysoký vysoká nízký nízká široký široká úzký úzká těžký těžká lehký lehká
+teplý teplá studený studená horký horká suchý suchá mokrý mokrá čistý čistá
+tichý tichá hlasitý veselý veselá smutný smutná šťastný šťastná zdravý
+silný silná slabý slabá chytrý chytrá hodný hodná zlý zlá líný pilný pilná
+bílý bílá černý černá červený červená modrý modrá zelený zelená žlutý žlutá
+hnědý hnědá šedý šedá růžový fialový oranžový zlatý stříbrný barevný
+první druhý třetí čtvrtý pátý šestý sedmý osmý devátý desátý poslední
+jeden jedna dva dvě tři čtyři pět šest sedm osm devět deset jedenáct
+dvanáct dvacet třicet čtyřicet padesát sto tisíc milion
+být jsem jsi je jsme jste jsou byl byla bylo byli budu bude budeme budou
+mít mám máš má máme máte mají měl měla měli
+dělat dělám děláš dělá děláme dělají dělal dělala udělat
+psát píšu píšeš píše píšeme píšete píšou psal psala napsat napsal
+číst čtu čteš čte čteme čtou četl četla přečíst přečetl
+jít jdu jdeš jde jdeme jdou šel šla šli přijít přišel přišla odejít
+jet jedu jede jedeme jedou jel jela jeli přijet odjet
+mluvit mluvím mluví mluvíme říct řekl řekla říkat říká říkají
+vidět vidím vidí viděl viděla slyšet slyším slyší slyšel
+chtít chci chceš chce chceme chtějí chtěl chtěla
+moci můžu můžeš může můžeme mohou mohl mohla
+muset musím musíš musí musíme musel musela
+vědět vím víš ví víme vědí věděl znát znám zná znají znal
+učit učím učí učíme učil učila naučit naučil naučila učit se
+pracovat pracuji pracuje pracujeme pracoval pracovala
+hrát hraju hraje hrajeme hrál hrála zahrát zpívat zpívá zpíval
+tančit tančí kreslit kreslí kreslil malovat maluje maloval
+jíst jím jíš jí jíme jedí jedl pít piju pije pijeme pil pila
+spát spím spí spal spala vstávat vstává vstal vstala
+sedět sedím sedí seděl ležet leží ležel stát stojí stál stála
+běžet běží běžel běhat běhá plavat plave plaval skákat skáče
+čekat čekám čeká čekal čekala hledat hledám hledá najít našel našla
+dát dám dá dal dávat dává brát beru bere bral vzít vzal vzala
+nést nese nesl nosit nosí nosil koupit koupil koupila platit platí
+otevřít otevřel zavřít zavřel začít začal začala skončit skončil
+myslet myslím myslí myslel rozumět rozumím rozumí pamatovat zapomenout
+ptát ptám ptá ptal odpovědět odpověděl odpovídá zkusit zkusil zkouší
+opakovat opakuje opakoval trénovat trénuje cvičit cvičí cvičil
+pomoct pomohl pomáhat pomáhá bydlet bydlí bydlel žít žije žil
+milovat miluje miloval smát směje smál plakat pláče plakal
+vařit vaří vařil péct peče pekl uklízet uklízí umýt myje
+rychle pomalu dobře špatně hezky krásně správně přesně klidně tiše
+hlasitě rovně doma venku uvnitř nahoře dole vpravo vlevo vpředu vzadu
+blízko daleko brzy pozdě dnes zítra včera teď hned potom pak nyní
+často někdy nikdy vždy znovu zase ještě už jen také taky spolu
+sám sama samo všichni všechno nic něco někdo nikdo kdokoli cokoli
+tady tam sem odtud odsud kde kam kudy proč jak kdy kolik který která
+ano ne možná asi určitě jistě skoro téměř velmi moc trochu málo hodně
+slovo slova slov věta věty vět text texty řádek řádky písmeno písmena
+klávesa klávesy klávesnice prst prsty prstů ruka ruce rychlost přesnost
+chyba chyby chyb úhoz úhozy cvičení lekce lekci úloha úlohy cíl cíle
+hra hry hru hráč hráči míč míče branka gól zápas hřiště trenér tým
+hudba písnička píseň kytara klavír housle buben zpěvák koncert
+film filmy kino divadlo herec herečka obraz malíř kniha básník příběh
+pohádka pohádky princ princezna král královna drak čert vodník víla
+radost smutek strach vztek láska přátelství pravda lež štěstí naděje
+nápad nápady otázka otázky odpověď odpovědi problém řešení důvod
+telefon mobil počítač tablet obrazovka myš tiskárna internet zpráva email
+peníze koruna koruny cena ceny obchod obchody nákup tržnice pokladna
+dárek dárky přání narozeniny vánoce velikonoce oslava dort svíčka
+moře pláž písek vlna vlny ostrov loďka jezero rybník řeka potok pramen
+hora hory kopec kopce skála skály údolí jeskyně cesta túra výlet stan
+`;
+
+export const WORDS = [...new Set([...RAW_WORDS.trim().split(/\s+/), ...RAW_WORDS_2.trim().split(/\s+/)])];
 
 export const NAMES = [
   "Praha", "Brno", "Ostrava", "Plzeň", "Olomouc", "Liberec", "Zlín", "Jihlava",

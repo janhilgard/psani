@@ -3,10 +3,13 @@
    Každá lekce přidává nové znaky (adds). Text lekce se pokaždé generuje
    znovu, a to jen ze znaků, které žák už zná (known) — s důrazem na nové
    znaky (focus). Pořadí písmen sleduje četnost v češtině.
+   Lekce se skládá z úloh (tasks): nácvik každého nového znaku zvlášť,
+   pak slova s novými znaky a nakonec procvičení všeho, co žák umí.
 ================================================================ */
 import { WORDS, NAMES, TEXTS } from "./words.js";
+import { buildLayout } from "./layout.js";
 
-export const PASS_ACC = 94;
+export const PASS_ACC = 90;
 const UPPER_PLAIN = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const UPPER_DIA = "ÁČĎÉĚÍŇÓŘŠŤÚÝŽ";
 
@@ -92,19 +95,82 @@ const DEFS = [
   ["text", "Souvislý text II", "", "text", 400, 145,
     "Delší text. Hlídejte si držení těla a uvolněná ramena."],
   ["text", "Závěrečná zkouška", "", "text", 500, 160,
-    "Závěr kurzu. Pro splnění potřebujete přesnost alespoň 95 %.", { acc: 95 }],
+    "Závěr kurzu: dlouhý text se vším, co umíte."],
 ];
+
+/* ---------- úlohy lekce ---------- */
+const HAND_LAYOUT = buildLayout("qwertz");
+const CHAR_NAMES = { ",": "Čárka", ".": "Tečka", "?": "Otazník", "!": "Vykřičník", ":": "Dvojtečka",
+                     "-": "Pomlčka", "()": "Závorky ( )", "+": "Plus", "=": "Rovná se", "%": "Procenta",
+                     "/": "Lomítko", "\"": "Uvozovky", ";": "Středník" };
+const PLAIN = "abcdefghijklmnopqrstuvwxyz";
+
+function groupTitle(g) {
+  const key = g.join("");
+  if (CHAR_NAMES[key]) return CHAR_NAMES[key];
+  if (g.length === 1) return PLAIN.includes(key) ? `Klávesa ${key.toUpperCase()}` : `Písmeno ${key}`;
+  return g.join(" ");
+}
+
+/* Znaky lekce rozdělí na skupiny pro samostatné úlohy: do 4 znaků každý
+   zvlášť (závorky jako pár), jinak podle ruky, která znak píše. */
+function groupsFor(adds) {
+  if (adds.length <= 4) {
+    const groups = [];
+    for (const ch of adds) {
+      if (ch === ")") continue;
+      groups.push(ch === "(" ? ["(", ")"] : [ch]);
+    }
+    return groups;
+  }
+  const left = [], right = [];
+  for (const ch of adds) (HAND_LAYOUT.fingerForChar(ch).startsWith("l") ? left : right).push(ch);
+  return [left, right].filter(g => g.length);
+}
+
+function tasksFor(lesson, prevKnown, isLast) {
+  const { adds, kind, len, cpm } = lesson;
+  const T = (title, known, focus, k, l, c) => ({
+    title, known, focus: new Set(focus), kind: k, len: Math.round(l), cpm: Math.round(c), acc: PASS_ACC,
+  });
+  if (kind === "text") {
+    return isLast ? [T("Závěrečný text", lesson.known, [], "text", len, cpm)]
+      : [T("Text 1", lesson.known, [], "text", len, cpm), T("Text 2", lesson.known, [], "text", len, cpm)];
+  }
+  if (!adds.length) {
+    return [T("Opakování 1", lesson.known, [], kind, len, cpm), T("Opakování 2", lesson.known, [], kind, len, cpm)];
+  }
+  const tasks = [];
+  const groups = groupsFor(adds);
+  for (const g of groups) {
+    const known = new Set([...prevKnown, ...g]);
+    let title = groupTitle(g);
+    if (groups.length === 2 && adds.length > 4) {
+      const hand = g === groups[0] ? "Levá ruka" : "Pravá ruka";
+      title = `${hand}${kind === "shift" ? (g === groups[0] ? " + pravý Shift" : " + levý Shift") : ""}: ${g.length > 6 ? g.slice(0, 6).join(" ") + " …" : g.join(" ")}`;
+    }
+    const k = kind === "words" || kind === "keys" ? "letter" : kind;
+    tasks.push(T(title, known, g, k, len * 0.7, cpm * 0.85));
+  }
+  const wordsTitle = kind === "numbers" ? "Čísla v textu" : kind === "shift" ? "Velká písmena ve větách" : "Nová písmena ve slovech";
+  tasks.push(T(wordsTitle, lesson.known, adds, kind, len, cpm));
+  tasks.push(T("Procvičení všeho, co umíte", lesson.known, [], kind === "numbers" ? "numbers" : kind === "keys" ? "keys" : "words", len, cpm));
+  return tasks;
+}
 
 export const LESSONS = (() => {
   const known = new Set([" "]);
   return DEFS.map(([section, title, adds, kind, len, cpm, desc, extra], i) => {
+    const prevKnown = new Set(known);
     for (const ch of adds) known.add(ch);
-    return {
+    const lesson = {
       id: i + 1, section, title, adds: [...adds], kind, len, cpm, desc,
       acc: PASS_ACC, ...extra,
       known: new Set(known),
       focus: new Set(adds),
     };
+    lesson.tasks = tasksFor(lesson, prevKnown, i === DEFS.length - 1);
+    return lesson;
   });
 })();
 
@@ -137,17 +203,26 @@ function poolFor(known) {
   return poolCache.get(key);
 }
 
+/* Číslo jen z číslic, které žák zná (úlohy „levá/pravá ruka“ znají jen půlku). */
 function numberToken(known, rng) {
+  const D = [..."0123456789"].filter(d => known.has(d));
+  const all = D.length === 10;
   const r = (a, b) => a + Math.floor(rng() * (b - a + 1));
-  const opts = [
-    () => String(r(1, 9)), () => String(r(10, 99)), () => String(r(100, 999)),
-    () => String(r(1950, 2030)),
-  ];
-  if (known.has(",")) opts.push(() => `${r(1, 99)},${r(1, 9)}`);
-  if (known.has(":")) opts.push(() => `${r(6, 23)}:${String(r(0, 59)).padStart(2, "0")}`);
-  if (known.has("%")) opts.push(() => `${r(5, 95)} %`);
-  if (known.has("+") && known.has("=")) opts.push(() => { const a = r(1, 20), b = r(1, 20); return `${a}+${b}=${a + b}`; });
-  if (known.has("/")) opts.push(() => `${r(1, 9)}/${r(2, 9)}`);
+  const num = n => {
+    const first = D.filter(d => d !== "0");
+    let s = pick(first.length ? first : D, rng);
+    for (let i = 1; i < n; i++) s += pick(D, rng);
+    return s;
+  };
+  const opts = [() => num(1), () => num(2), () => num(3), () => num(4)];
+  if (all) opts.push(() => String(r(1950, 2030)));
+  if (known.has(",")) opts.push(() => `${num(2)},${num(1)}`);
+  if (all && known.has(":")) opts.push(() => `${r(6, 23)}:${String(r(0, 59)).padStart(2, "0")}`);
+  if (known.has("%")) opts.push(() => `${num(2)} %`);
+  if (all && known.has("+") && known.has("=")) opts.push(() => { const a = r(1, 20), b = r(1, 20); return `${a}+${b}=${a + b}`; });
+  if (known.has("/")) opts.push(() => `${num(1)}/${num(1)}`);
+  if (known.has("+")) opts.push(() => `+${num(3)}`, () => `${num(1)}+${num(1)}`);
+  if (known.has("=")) opts.push(() => `x=${num(2)}`);
   return pick(opts, rng)();
 }
 
@@ -188,7 +263,7 @@ function shapeSentences(tokens, known, focus, rng) {
       else if (has(";") && r < p(";", 0.17, 0.42)) s[k] += ";";
       else if (has("-") && r < p("-", 0.2, 0.42)) s[k] += " -";
     }
-    let end = ".";
+    let end = has(".") ? "." : "";
     const r = rng();
     if (has("?") && r < p("?", 0.1, 0.35)) end = "?";
     else if (has("!") && r < p("!", 0.18, 0.6)) end = "!";
@@ -240,6 +315,9 @@ export function buildText({ known, focus = new Set(), kind = "words", len = 160,
     let t;
     if (kind === "numbers" && r < 0.45) t = numberToken(known, rng);
     else if (kind === "keys") t = (r < 0.65 || focused.length < 3) ? drill(focusLetters, knownLetters, rng) : pick(focused, rng);
+    // úloha na jedno písmeno: skupiny písmen i skutečná slova, která ho obsahují
+    // (u znamének se slova jen proloží novým znakem, skupiny písmen nemají smysl)
+    else if (kind === "letter") t = (focusLetters.length && (r < 0.4 || focused.length < 3)) ? drill(focusLetters, knownLetters, rng) : pick(focused, rng);
     else if (upperFocus.length && r < 0.6) t = capToken();
     else if (focused.length >= 4 && r < 0.7) t = pick(focused, rng);
     // umělé skupiny písmen jen tam, kde je skutečných slov s novými znaky málo
@@ -251,12 +329,17 @@ export function buildText({ known, focus = new Set(), kind = "words", len = 160,
     last = t;
     length += t.length + 1;
   }
-  if (known.has(".")) return shapeSentences(tokens, known, focus, rng);
+  // interpunkce: věty, jakmile žák zná tečku, nebo když se právě učí znaménko
+  if (known.has(".") || [...focus].some(c => !isLetter(c) && !/[0-9]/.test(c))) return shapeSentences(tokens, known, focus, rng);
   return tokens.join(" ");
 }
 
 export function lessonText(lesson, rng = Math.random) {
   return buildText({ known: lesson.known, focus: lesson.focus, kind: lesson.kind, len: lesson.len, rng });
+}
+
+export function taskText(task, rng = Math.random) {
+  return buildText({ known: task.known, focus: task.focus, kind: task.kind, len: task.len, rng });
 }
 
 /* Dlouhý souvislý text pro test rychlosti. */

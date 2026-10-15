@@ -31,8 +31,9 @@ Od prvních dvou kláves po plynulý text s diakritikou — přímo v prohlíže
 | **Shift, číslice a znaménka** | velká písmena, `? ! : - ( )`, číslice, `+ = % / " ;` |
 | **Souvislý text** | skutečné odstavce a závěrečná zkouška |
 
-- **Každý pokus je jiný text.** Cvičení se generuje ze slovníku ~900 českých slov — vždy **jen z písmen, která už znáte**, s důrazem na nové klávesy.
-- **Zvládnutí, ne jen dokončení.** Lekci splníte s přesností alespoň 94 %, rychlost přináší další ⭐.
+- **Víc než 120 úloh.** Každá lekce začíná nácvikem **každého nového písmene zvlášť** (úloha na E používá jen E a to, co už znáte), pak následují slova s novými písmeny a procvičení všeho naučeného. Velká písmena a číslice se trénují zvlášť pro levou a pravou ruku.
+- **Každý pokus je jiný text.** Cvičení se generuje ze slovníku ~1 600 českých slov včetně ohýbaných tvarů — vždy **jen z písmen, která už znáte**, s důrazem na nové klávesy.
+- **Zvládnutí, ne jen dokončení.** Úlohu splníte s přesností alespoň 90 % — tím se odemkne další úloha a po splnění všech úloh další lekce. Rychlost přináší další ⭐.
 
 ### 🧠 Přizpůsobí se vám
 - **Trénink slabých kláves** — sleduje přesnost a prodlevu každého znaku a skládá text z toho, co vám nejde.
@@ -65,7 +66,7 @@ public/
 ├── css/app.css         # vzhled, tmavý/světlý režim, responzivita
 ├── js/
 │   ├── layout.js       # česká klávesnice, prsty, mrtvé klávesy, počítání úhozů
-│   ├── curriculum.js   # osnova 34 lekcí a generátor cvičení
+│   ├── curriculum.js   # osnova 34 lekcí, jejich úlohy a generátor cvičení
 │   ├── words.js        # slovník, vlastní jména a souvislé texty
 │   ├── store.js        # pokrok, statistiky kláves, validace importu
 │   ├── keyboard.js     # klávesnice, ruce, teplotní mapa, grafy (DOM + SVG)
