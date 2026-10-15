@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="cs" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080B14">
+<meta name="description" content="Bezplatný interaktivní kurz psaní všemi deseti na české klávesnici: 34 lekcí podle četnosti písmen, trénink slabých kláves, testy rychlosti a statistiky.">
+<title>Psaní všemi deseti — kurz psaní na českou klávesnici</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+
+<svg class="defs" aria-hidden="true" focusable="false"><defs>
+  <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#5B8CFF"/><stop offset="100%" stop-color="#22D3EE"/>
+  </linearGradient>
+</defs></svg>
+
+<div class="mobile-warn hidden" id="mobile-warn" role="alert">
+  <span>Kurz psaní všemi deseti potřebuje fyzickou klávesnici. Připojte ji k tabletu, nebo otevřete stránku na počítači.</span>
+  <button class="btn sm" id="mobile-warn-close">Rozumím</button>
+</div>
+
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">10</div>
+      <div><h1>Psaní všemi deseti</h1><p>kurz pro českou klávesnici</p></div>
+    </div>
+
+    <div class="prog-card">
+      <div class="ring">
+        <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+          <circle class="track" cx="28" cy="28" r="24" fill="none" stroke-width="6"/>
+          <circle class="fill" id="ring-fill" cx="28" cy="28" r="24" fill="none" stroke-width="6"
+            stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+        </svg>
+        <span class="pct" id="ring-pct">0 %</span>
+      </div>
+      <div>
+        <div class="t">Průchod kurzem</div>
+        <div class="s" id="prog-text">0 z 34 lekcí splněno</div>
+      </div>
+    </div>
+
+    <nav class="menu" aria-label="Hlavní menu">
+      <button class="menu-item" data-go="home"><span class="ic" aria-hidden="true">⌂</span>Přehled</button>
+      <button class="menu-item" data-go="adaptive"><span class="ic" aria-hidden="true">◎</span>Trénink slabých kláves</button>
+      <button class="menu-item" data-go="test"><span class="ic" aria-hidden="true">⏱</span>Test rychlosti</button>
+      <button class="menu-item" data-go="stats"><span class="ic" aria-hidden="true">▤</span>Statistiky</button>
+    </nav>
+
+    <div class="nav-label">Lekce</div>
+    <nav class="nav" id="nav" aria-label="Lekce"></nav>
+
+    <button class="menu-item settings-btn" id="btn-settings"><span class="ic" aria-hidden="true">⚙</span>Nastavení</button>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main" id="main">
+
+    <!-- přehled -->
+    <section class="view" id="view-home">
+      <div class="hero">
+        <span class="eyebrow">⌨ Interaktivní kurz</span>
+        <h2 id="hero-title">Naučte se psát <em>všemi deseti</em>.</h2>
+        <p id="hero-sub"></p>
+        <div class="cta">
+          <button class="btn primary" id="btn-continue">Začít →</button>
+          <button class="btn" id="btn-adaptive-home">Trénink slabých kláves</button>
+        </div>
+      </div>
+
+      <div class="cards">
+        <div class="card"><div class="v" id="h-done">0</div><div class="l">splněných lekcí</div></div>
+        <div class="card"><div class="v" id="h-best">–</div><div class="l">nejvyšší rychlost (úhozů/min)</div></div>
+        <div class="card"><div class="v" id="h-acc">–</div><div class="l">přesnost posledních cvičení</div></div>
+        <div class="card goal">
+          <div class="l">Dnešní cíl</div>
+          <div class="goal-bar"><i id="goal-fill"></i></div>
+          <div class="goal-row"><span id="goal-text">0 z 10 min</span><span class="streak" id="streak"></span></div>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="panel">
+          <h3>Vývoj rychlosti a přesnosti</h3>
+          <div id="home-chart" class="chart"></div>
+        </div>
+        <div class="panel">
+          <h3>Slabé klávesy</h3>
+          <div id="weak-keys" class="weak-keys"></div>
+          <h3 class="mt">Správné držení</h3>
+          <ul class="tips">
+            <li>Prsty na domovské řadě <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> a <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd><kbd>Ů</kbd>, palce na mezerníku.</li>
+            <li>Na <kbd>F</kbd> a <kbd>J</kbd> nahmatáte výstupky — podle nich najdete pozici bez koukání.</li>
+            <li>Shift mačkejte malíkem opačné ruky.</li>
+            <li>Přesnost má přednost. Rychlost přijde s opakováním.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- cvičení -->
+    <section class="view hidden" id="view-practice">
+      <div class="topbar">
+        <button class="btn ghost sm" id="btn-back">← Přehled</button>
+        <div class="title">
+          <h2><span id="practice-title"></span><span class="chip" id="practice-chip"></span></h2>
+          <div class="sub" id="practice-sub"></div>
+        </div>
+        <button class="btn sm" id="btn-restart" title="Nový text (Enter)">↻ Nový text</button>
+      </div>
+      <div class="target" id="practice-target"></div>
+
+      <div class="stats">
+        <div class="stat spd"><div class="v" id="st-cpm">0</div><div class="l">Úhozů za minutu</div></div>
+        <div class="stat ok"><div class="v" id="st-acc">100 %</div><div class="l">Přesnost</div></div>
+        <div class="stat err"><div class="v" id="st-err">0</div><div class="l">Chyby</div></div>
+        <div class="stat tim"><div class="v" id="st-time">0:00</div><div class="l" id="st-time-label">Čas</div></div>
+      </div>
+
+      <div class="progress"><i id="bar"></i></div>
+      <div class="warn" id="warn"></div>
+
+      <div class="textbox size-m" id="textbox" role="textbox" aria-readonly="true" aria-label="Text k opsání">
+        <div class="text-inner" id="text-inner"></div>
+      </div>
+
+      <div class="kb-wrap" id="kb-wrap" data-mode="full">
+        <div class="next-hint" id="next-hint" aria-hidden="true"></div>
+        <div class="kb" id="keyboard" aria-hidden="true"></div>
+        <div class="hands" id="hands"></div>
+      </div>
+
+      <p class="hint">
+        <kbd>Esc</kbd> přehled · <kbd>Enter</kbd> nový text ·
+        <b>Přesný režim</b>: pokračujete až po správné klávese · <b>Volný režim</b>: chyba se označí a jde se dál (<kbd>Backspace</kbd> vrací)
+      </p>
+    </section>
+
+    <!-- test rychlosti -->
+    <section class="view hidden" id="view-test">
+      <div class="hero">
+        <span class="eyebrow">⏱ Test rychlosti</span>
+        <h2>Kolik toho napíšete za <em>minutu</em>?</h2>
+        <p>Souvislý český text, čas běží od prvního úhozu. Chyby se neopravují, započítávají se jen správně napsané znaky. Velké písmeno, háček i čárka přes mrtvou klávesu se počítají jako úhozy navíc, jak to dělá česká norma.</p>
+      </div>
+      <div class="test-opts">
+        <button class="test-opt" data-test="60"><b>1 minuta</b><span>rychlá zkouška</span></button>
+        <button class="test-opt" data-test="180"><b>3 minuty</b><span>standardní test</span></button>
+        <button class="test-opt" data-test="300"><b>5 minut</b><span>vytrvalost</span></button>
+      </div>
+      <p class="muted">Orientačně: 100–150 úhozů za minutu zvládá začátečník po kurzu, 200–300 zkušený písař a přes 400 profesionál.</p>
+    </section>
+
+    <!-- statistiky -->
+    <section class="view hidden" id="view-stats">
+      <div class="hero compact">
+        <span class="eyebrow">▤ Statistiky</span>
+        <h2>Váš <em>pokrok</em></h2>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="v" id="s-time">0 min</div><div class="l">celkem procvičeno</div></div>
+        <div class="card"><div class="v" id="s-count">0</div><div class="l">dokončených cvičení</div></div>
+        <div class="card"><div class="v" id="s-best">–</div><div class="l">nejlepší test (úhozů/min)</div></div>
+        <div class="card"><div class="v" id="s-acc">–</div><div class="l">průměrná přesnost</div></div>
+      </div>
+      <div class="panel">
+        <h3>Rychlost a přesnost (posledních 60 cvičení)</h3>
+        <div id="stats-chart" class="chart"></div>
+      </div>
+      <div class="panel">
+        <h3>Teplotní mapa chyb</h3>
+        <p class="muted">Čím červenější klávesa, tím víc chyb na ní děláte. Po najetí myší uvidíte přesnost.</p>
+        <div class="kb heatmap" id="heatmap" aria-hidden="true"></div>
+      </div>
+      <div class="panels">
+        <div class="panel">
+          <h3>Nejslabší znaky</h3>
+          <table class="tbl"><thead><tr><th>Znak</th><th>Přesnost</th><th>Prodleva</th></tr></thead><tbody id="weak-table"></tbody></table>
+        </div>
+        <div class="panel">
+          <h3>Poslední cvičení</h3>
+          <table class="tbl"><thead><tr><th>Kdy</th><th>Co</th><th>Úh/min</th><th>Přesnost</th><th>Čas</th></tr></thead><tbody id="history"></tbody></table>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Záloha pokroku</h3>
+        <p class="muted">Pokrok se ukládá jen v tomto prohlížeči. Zálohou ho přenesete na jiný počítač.</p>
+        <div class="actions left">
+          <button class="btn" id="btn-export">Stáhnout zálohu</button>
+          <button class="btn" id="btn-import">Načíst zálohu</button>
+          <input type="file" id="file-import" accept="application/json,.json" class="hidden">
+          <button class="btn danger" id="btn-reset">Smazat pokrok</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ================= VÝSLEDEK ================= -->
+<div class="overlay hidden" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="res-title">
+    <h2 id="res-title">Hotovo</h2>
+    <div class="res-stars" id="res-stars"></div>
+    <div class="record" id="res-record">🏆 Nový osobní rekord!</div>
+    <div class="res-big">
+      <div class="stat spd"><div class="v" id="res-cpm">0</div><div class="l">Úhozů/min</div></div>
+      <div class="stat ok"><div class="v" id="res-acc">0 %</div><div class="l">Přesnost</div></div>
+      <div class="stat tim"><div class="v" id="res-time">0:00</div><div class="l">Čas</div></div>
+    </div>
+    <p class="verdict" id="res-verdict"></p>
+    <div class="res-chars" id="res-chars"></div>
+    <div class="fingers">
+      <div class="fl"><span>Chyby podle prstů</span><span>celkem <b id="res-err">0</b></span></div>
+      <div id="res-fingers"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-again">↻ Znovu</button>
+      <button class="btn primary" id="btn-next">Další lekce →</button>
+      <button class="btn ghost" id="btn-menu">Přehled</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ÚVOD ================= -->
+<div class="overlay hidden" id="intro">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+    <h2 id="intro-title">Než začnete</h2>
+    <p class="subt">Pár rad, které rozhodnou o tom, jak rychle se naučíte</p>
+    <div class="intro-list">
+      <p><b>1.</b> Seďte rovně, chodidla na zemi, předloktí vodorovně a zápěstí volně nad stolem.</p>
+      <p><b>2.</b> Prsty položte na domovskou řadu: <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> levá ruka, <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> <kbd>Ů</kbd> pravá ruka. Palce leží na mezerníku.</p>
+      <p><b>3.</b> Na <strong>F</strong> a <strong>J</strong> nahmatáte malé výstupky. Podle nich najdete pozici i se zavřenýma očima.</p>
+      <p><b>4.</b> Dívejte se na obrazovku, ne na ruce. Pod textem vždy uvidíte, který prst má stisknout další klávesu.</p>
+      <p><b>5.</b> Lekci splníte s přesností alespoň 94 %. Rychlost přinese další hvězdy, ale přijde až s opakováním.</p>
+      <p><b>6.</b> Zkontrolujte, že máte v systému zapnutou <b>českou klávesnici</b>.</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-intro">Rozumím, začít</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= NASTAVENÍ ================= -->
+<div class="overlay hidden" id="settings">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <h2 id="settings-title">Nastavení</h2>
+    <div class="set-list">
+      <div class="set-row"><span class="lbl">Vzhled</span>
+        <div class="seg" data-setting="theme"><button data-v="dark">Tmavý</button><button data-v="light">Světlý</button></div></div>
+      <div class="set-row"><span class="lbl">Režim chyb</span>
+        <div class="seg" data-setting="mode"><button data-v="strict">Přesný</button><button data-v="free">Volný</button></div></div>
+      <div class="set-row"><span class="lbl">Velikost textu</span>
+        <div class="seg" data-setting="size"><button data-v="s">S</button><button data-v="m">M</button><button data-v="l">L</button></div></div>
+      <div class="set-row"><span class="lbl">Nápověda klávesnice</span>
+        <div class="seg" data-setting="kb"><button data-v="auto">Automaticky</button><button data-v="full">Celá</button><button data-v="hands">Jen ruce</button><button data-v="hidden">Skrytá</button></div></div>
+      <p class="set-note">Automaticky: nové klávesy ukazuje celou klávesnici, opakování jen ruce, souvislý text a testy bez nápovědy. Nápověda se vždy objeví po chybě.</p>
+      <div class="set-row"><span class="lbl">Rozložení</span>
+        <div class="seg" data-setting="layout"><button data-v="qwertz">QWERTZ</button><button data-v="qwerty">QWERTY</button></div></div>
+      <p class="set-note" id="layout-detect"></p>
+      <div class="set-row"><span class="lbl">Zvuk při chybě</span>
+        <div class="seg" data-setting="sound"><button data-v="false">Vypnutý</button><button data-v="true">Zapnutý</button></div></div>
+      <div class="set-row"><span class="lbl">Výběr lekcí</span>
+        <div class="seg" data-setting="freeChoice"><button data-v="false">Postupně</button><button data-v="true">Volně</button></div></div>
+      <div class="set-row"><span class="lbl">Denní cíl</span>
+        <div class="seg" data-setting="goal"><button data-v="5">5</button><button data-v="10">10</button><button data-v="15">15</button><button data-v="20">20</button><button data-v="30">30 min</button></div></div>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-settings-close">Hotovo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="sr-only" id="live" aria-live="polite"></div>
+
+</body>
+</html>

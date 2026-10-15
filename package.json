@@ -1,0 +1,10 @@
+{
+  "name": "psani-vsemi-deseti",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Kurz psaní všemi deseti na české klávesnici (statický web, bez závislostí)",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}
